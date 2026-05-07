@@ -64,7 +64,7 @@ masters_project/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/polymer-stacking-discovery.git
+git clone https://github.com/Malav786/polymer-stacking-discovery.git
 cd polymer-stacking-discovery
 ```
 
