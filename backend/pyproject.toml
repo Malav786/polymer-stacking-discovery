@@ -1,0 +1,30 @@
+[project]
+name = "masters-project"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "ase>=3.27.0",
+    "fastapi>=0.135.3",
+    "hdbscan>=0.8.41",
+    "ipykernel>=7.2.0",
+    "jupyter>=1.1.1",
+    "matplotlib>=3.10.8",
+    "numpy>=2.4.3",
+    "pandas>=3.0.1",
+    "pydantic>=2.12.5",
+    "pydantic-settings>=2.14.0",
+    "scikit-learn>=1.8.0",
+    "seaborn>=0.13.2",
+    "sqlalchemy>=2.0.49",
+    "torch>=2.10.0",
+    "torch-geometric>=2.7.0",
+    "tqdm>=4.67.3",
+    "umap-learn>=0.5.11",
+    "uvicorn>=0.44.0",
+]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"

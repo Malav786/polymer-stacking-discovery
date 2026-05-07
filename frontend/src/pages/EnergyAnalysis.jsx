@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import PlotlyComponent from "react-plotly.js";
+
+const Plot = PlotlyComponent.default || PlotlyComponent;
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
@@ -117,308 +120,132 @@ function getEnergyColor(value, minValue, maxValue) {
     return `rgb(${r} ${g} ${b})`;
 }
 
-function HistogramChart({ values, title, summary="Displays the frequency distribution of stabilization energy (ΔE) across the dataset. A peak indicates the most typical stability range." }) {
-    const bins = useMemo(() => buildHistogram(values, 24), [values]);
-    const width = 760;
-    const height = 320;
-    const padding = 50;
-
-    const maxCount = bins.length ? Math.max(...bins.map((b) => b.count)) : 1;
-
+function HistogramChart({ values, title, summary = "Displays the frequency distribution of stabilization energy (ΔE) across the dataset. A peak indicates the most typical stability range." }) {
     return (
         <Card className="group relative">
             <CardHeader>
                 <CardTitle>{title}</CardTitle>
             </CardHeader>
-            <CardContent className="overflow-x-auto relative min-h-[340px]">
-                {bins.length === 0 ? (
-                    <p className="text-sm text-slate-500">No data available.</p>
-                ) : (
-                    <svg width={width} height={height} className="rounded-xl border border-slate-200/50 bg-white/50 backdrop-blur-sm">
-                        <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#cbd5e1" />
-                        <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="#cbd5e1" />
-                        
-                        <text x={width / 2} y={height - 15} textAnchor="middle" className="text-xs fill-slate-500 font-medium tracking-wide shadow-sm">ΔE (Energy Difference)</text>
-                        <text x={18} y={height / 2} textAnchor="middle" transform={`rotate(-90, 18, ${height/2})`} className="text-xs fill-slate-500 font-medium tracking-wide shadow-sm">Number of Structures</text>
-
-                        {bins.map((bin, i) => {
-                            const chartWidth = width - padding * 2;
-                            const barWidth = chartWidth / bins.length - 2;
-                            const x = padding + i * (chartWidth / bins.length) + 1;
-                            const barHeight = maxCount ? (bin.count / maxCount) * (height - padding * 2) : 0;
-                            const y = height - padding - barHeight;
-
-                            return (
-                                <g key={`${bin.x0}-${bin.x1}`}>
-                                    <rect
-                                        x={x}
-                                        y={y}
-                                        width={Math.max(1, barWidth)}
-                                        height={barHeight}
-                                        rx="4"
-                                        fill="rgba(124, 58, 237, 0.75)"
-                                        className="transition-all hover:fill-brand-600 hover:opacity-100 cursor-pointer"
-                                    />
-                                    <title>
-                                        {`${bin.x0.toFixed(3)} to ${bin.x1.toFixed(3)} : ${bin.count} structures`}
-                                    </title>
-                                </g>
-                            );
-                        })}
-                    </svg>
-                )}
-                <div className="absolute top-8 right-8 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
-                   <div className="bg-white/95 backdrop-blur-md p-3.5 rounded-xl shadow-glass border border-slate-200/60 max-w-[240px]">
-                      <p className="font-semibold text-slate-800 text-xs tracking-tight">Graph Overview</p>
-                      <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">{summary}</p>
-                   </div>
-                </div>
+            <CardContent className="relative min-h-[340px] p-2">
+                <Plot
+                    data={[
+                        {
+                            x: values,
+                            type: 'histogram',
+                            marker: { color: 'rgba(124, 58, 237, 0.75)' }
+                        }
+                    ]}
+                    layout={{
+                        autosize: true,
+                        margin: { l: 50, r: 20, t: 20, b: 40 },
+                        xaxis: { title: 'ΔE (Energy Difference)' },
+                        yaxis: { title: 'Number of Structures' },
+                        paper_bgcolor: 'rgba(0,0,0,0)',
+                        plot_bgcolor: 'rgba(0,0,0,0)'
+                    }}
+                    useResizeHandler={true}
+                    style={{ width: '100%', height: '320px' }}
+                    config={{ displayModeBar: false }}
+                />
             </CardContent>
         </Card>
     );
 }
 
-function EnergyScatter({ points, title, summary="Visualizes structural embeddings colored heavily by their delta energy. Darker blue indicates higher stability (low ΔE), while darker red reveals correspondingly lower stability." }) {
-    const width = 760;
-    const height = 420;
-    const padding = 50;
-
+function EnergyScatter({ points, title, summary = "Visualizes structural embeddings colored heavily by their delta energy. Darker blue indicates higher stability (low ΔE), while darker red reveals correspondingly lower stability." }) {
     const valid = (points || []).filter(
-        (p) =>
-            Number.isFinite(p.x) &&
-            Number.isFinite(p.y) &&
-            Number.isFinite(p.delta_energy)
+        (p) => Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.delta_energy)
     );
-
-    if (!valid.length) {
-        return (
-            <Card>
-                <CardHeader>
-                    <CardTitle>{title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-slate-500">No projection data available.</p>
-                </CardContent>
-            </Card>
-        );
-    }
-
-    const minX = Math.min(...valid.map((p) => p.x));
-    const maxX = Math.max(...valid.map((p) => p.x));
-    const minY = Math.min(...valid.map((p) => p.y));
-    const maxY = Math.max(...valid.map((p) => p.y));
-    const minE = Math.min(...valid.map((p) => p.delta_energy));
-    const maxE = Math.max(...valid.map((p) => p.delta_energy));
-
-    const scaleX = (x) => {
-        const denom = maxX - minX || 1;
-        return padding + ((x - minX) / denom) * (width - padding * 2);
-    };
-
-    const scaleY = (y) => {
-        const denom = maxY - minY || 1;
-        return height - padding - ((y - minY) / denom) * (height - padding * 2);
-    };
 
     return (
         <Card className="group relative">
             <CardHeader>
                 <CardTitle>{title}</CardTitle>
             </CardHeader>
-            <CardContent className="overflow-x-auto relative min-h-[440px]">
-                <div className="mb-3 flex items-center gap-4 text-xs text-slate-500">
-                    <div className="flex items-center gap-2">
-                        <span className="inline-block h-3 w-3 rounded-full bg-blue-500" />
-                        Lower ΔE
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="inline-block h-3 w-3 rounded-full bg-red-500" />
-                        Higher ΔE
-                    </div>
-                </div>
-
-                <svg width={width} height={height} className="rounded-xl border border-slate-200/50 bg-white/50 backdrop-blur-sm">
-                    <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#cbd5e1" />
-                    <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="#cbd5e1" />
-                    
-                    <text x={width / 2} y={height - 15} textAnchor="middle" className="text-xs fill-slate-500 font-medium tracking-wide shadow-sm">Projection Dimension 1</text>
-                    <text x={18} y={height / 2} textAnchor="middle" transform={`rotate(-90, 18, ${height/2})`} className="text-xs fill-slate-500 font-medium tracking-wide shadow-sm">Projection Dimension 2</text>
-
-                    {valid.map((p, i) => (
-                        <circle
-                            key={`${p.structure_id || "point"}-${i}`}
-                            cx={scaleX(p.x)}
-                            cy={scaleY(p.y)}
-                            r="3"
-                            fill={getEnergyColor(p.delta_energy, minE, maxE)}
-                            opacity="0.85"
-                        >
-                            <title>
-                                {`${p.structure_id} | ΔE: ${formatNumber(p.delta_energy)} | Cluster: ${p.cluster_label}`}
-                            </title>
-                        </circle>
-                    ))}
-                </svg>
-                <div className="absolute top-16 right-8 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
-                   <div className="bg-white/95 backdrop-blur-md p-3.5 rounded-xl shadow-glass border border-slate-200/60 max-w-[240px]">
-                      <p className="font-semibold text-slate-800 text-xs tracking-tight">Graph Overview</p>
-                      <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">{summary}</p>
-                   </div>
-                </div>
+            <CardContent className="relative min-h-[440px] p-2">
+                <Plot
+                    data={[
+                        {
+                            x: valid.map(p => p.x),
+                            y: valid.map(p => p.y),
+                            text: valid.map(p => `${p.structure_id}<br>ΔE: ${p.delta_energy?.toFixed(4)}<br>Cluster: ${p.cluster_label}`),
+                            mode: 'markers',
+                            type: 'scatter',
+                            marker: {
+                                size: 6,
+                                color: valid.map(p => p.delta_energy),
+                                colorscale: [
+                                    [0, 'rgb(59, 130, 246)'],
+                                    [1, 'rgb(239, 68, 68)']
+                                ],
+                                colorbar: {
+                                    title: 'ΔE',
+                                    thickness: 15,
+                                    len: 0.8
+                                },
+                                opacity: 0.85
+                            },
+                            hoverinfo: 'text'
+                        }
+                    ]}
+                    layout={{
+                        autosize: true,
+                        margin: { l: 50, r: 20, t: 20, b: 40 },
+                        xaxis: { title: 'Projection Dimension 1' },
+                        yaxis: { title: 'Projection Dimension 2' },
+                        paper_bgcolor: 'rgba(0,0,0,0)',
+                        plot_bgcolor: 'rgba(0,0,0,0)'
+                    }}
+                    useResizeHandler={true}
+                    style={{ width: '100%', height: '420px' }}
+                    config={{ displayModeBar: false }}
+                />
             </CardContent>
         </Card>
     );
 }
 
-function ClusterBoxplot({ rows, topN = 10, summary="Details the spread and median of energy values for highly populated clustering motifs, establishing which structural families are statistically most stable." }) {
-    const width = 860;
-    const height = 380;
-    const padding = 50;
-
+function ClusterBoxplot({ rows, topN = 10, summary = "Details the spread and median of energy values for highly populated clustering motifs, establishing which structural families are statistically most stable." }) {
     const clusterStats = Object.values(
         rows.reduce((acc, row) => {
             const label = String(row.cluster_label ?? "unknown");
             const delta = finiteNumber(row.delta_energy);
-
             if (delta === null) return acc;
-
-            if (!acc[label]) {
-                acc[label] = {
-                    cluster_label: label,
-                    values: [],
-                };
-            }
-
+            if (!acc[label]) acc[label] = { label, values: [] };
             acc[label].values.push(delta);
             return acc;
         }, {})
-    )
-        .map((group) => {
-            const sorted = [...group.values].sort((a, b) => a - b);
-            return {
-                cluster_label: group.cluster_label,
-                count: sorted.length,
-                min: sorted[0],
-                q1: quantile(sorted, 0.25),
-                median: quantile(sorted, 0.5),
-                q3: quantile(sorted, 0.75),
-                max: sorted[sorted.length - 1],
-                mean: mean(sorted),
-            };
-        })
-        .sort((a, b) => a.mean - b.mean)
-        .slice(0, topN);
+    ).sort((a, b) => mean(a.values) - mean(b.values)).slice(0, topN);
 
-    if (!clusterStats.length) {
-        return (
-            <Card>
-                <CardHeader>
-                    <CardTitle>Cluster vs ΔE Boxplots</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-slate-500">No cluster energy data available.</p>
-                </CardContent>
-            </Card>
-        );
-    }
-
-    const allValues = clusterStats.flatMap((c) => [c.min, c.q1, c.median, c.q3, c.max]).filter(Number.isFinite);
-    const globalMin = Math.min(...allValues);
-    const globalMax = Math.max(...allValues);
-
-    const scaleY = (value) => {
-        const denom = globalMax - globalMin || 1;
-        return height - padding - ((value - globalMin) / denom) * (height - padding * 2);
-    };
-
-    const usableWidth = width - padding * 2;
-    const step = usableWidth / clusterStats.length;
+    const plotData = clusterStats.map(c => ({
+        y: c.values,
+        type: 'box',
+        name: `Cluster ${c.label}`,
+        boxpoints: false,
+        marker: { color: '#3b82f6' }
+    }));
 
     return (
         <Card className="group relative">
             <CardHeader>
                 <CardTitle>Cluster vs ΔE Boxplots</CardTitle>
             </CardHeader>
-            <CardContent className="overflow-x-auto relative min-h-[400px]">
-                <p className="mb-3 text-sm text-slate-500">
-                    Showing the {clusterStats.length} lowest-mean-energy clusters.
-                </p>
-
-                <svg width={width} height={height} className="rounded-xl border border-slate-200/50 bg-white/50 backdrop-blur-sm">
-                    <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#cbd5e1" />
-                    <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="#cbd5e1" />
-                    
-                    <text x={width / 2} y={height - 5} textAnchor="middle" className="text-xs fill-slate-500 font-medium tracking-wide shadow-sm">Cluster Label (Motif Families)</text>
-                    <text x={18} y={height / 2} textAnchor="middle" transform={`rotate(-90, 18, ${height/2})`} className="text-xs fill-slate-500 font-medium tracking-wide shadow-sm">ΔE (Energy Difference)</text>
-
-                    {clusterStats.map((cluster, index) => {
-                        const centerX = padding + index * step + step / 2;
-                        const boxWidth = Math.min(28, step * 0.45);
-
-                        return (
-                            <g key={cluster.cluster_label}>
-                                <line
-                                    x1={centerX}
-                                    x2={centerX}
-                                    y1={scaleY(cluster.min)}
-                                    y2={scaleY(cluster.max)}
-                                    stroke="#64748b"
-                                    strokeWidth="1.5"
-                                />
-                                <rect
-                                    x={centerX - boxWidth / 2}
-                                    y={scaleY(cluster.q3)}
-                                    width={boxWidth}
-                                    height={Math.max(2, scaleY(cluster.q1) - scaleY(cluster.q3))}
-                                    fill="rgb(59 130 246 / 0.22)"
-                                    stroke="#2563eb"
-                                />
-                                <line
-                                    x1={centerX - boxWidth / 2}
-                                    x2={centerX + boxWidth / 2}
-                                    y1={scaleY(cluster.median)}
-                                    y2={scaleY(cluster.median)}
-                                    stroke="#1e293b"
-                                    strokeWidth="2"
-                                />
-                                <line
-                                    x1={centerX - boxWidth / 3}
-                                    x2={centerX + boxWidth / 3}
-                                    y1={scaleY(cluster.min)}
-                                    y2={scaleY(cluster.min)}
-                                    stroke="#64748b"
-                                />
-                                <line
-                                    x1={centerX - boxWidth / 3}
-                                    x2={centerX + boxWidth / 3}
-                                    y1={scaleY(cluster.max)}
-                                    y2={scaleY(cluster.max)}
-                                    stroke="#64748b"
-                                />
-
-                                <text
-                                    x={centerX}
-                                    y={height - padding + 18}
-                                    textAnchor="middle"
-                                    fontSize="11"
-                                    fill="#475569"
-                                >
-                                    {cluster.cluster_label}
-                                </text>
-
-                                <title>
-                                    {`Cluster ${cluster.cluster_label} | mean ${formatNumber(cluster.mean)} | n=${cluster.count}`}
-                                </title>
-                            </g>
-                        );
-                    })}
-                </svg>
-                <div className="absolute top-16 right-8 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
-                   <div className="bg-white/95 backdrop-blur-md p-3.5 rounded-xl shadow-glass border border-slate-200/60 max-w-[240px]">
-                      <p className="font-semibold text-slate-800 text-xs tracking-tight">Graph Overview</p>
-                      <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">{summary}</p>
-                   </div>
-                </div>
+            <CardContent className="relative min-h-[400px] p-2">
+                <Plot
+                    data={plotData}
+                    layout={{
+                        autosize: true,
+                        margin: { l: 50, r: 20, t: 20, b: 50 },
+                        xaxis: { title: 'Cluster Label (Motif Families)' },
+                        yaxis: { title: 'ΔE (Energy Difference)' },
+                        showlegend: false,
+                        paper_bgcolor: 'rgba(0,0,0,0)',
+                        plot_bgcolor: 'rgba(0,0,0,0)'
+                    }}
+                    useResizeHandler={true}
+                    style={{ width: '100%', height: '380px' }}
+                    config={{ displayModeBar: false }}
+                />
             </CardContent>
         </Card>
     );

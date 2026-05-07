@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
+import Plot from "react-plotly.js";
 import MotifExplorer from "./pages/MotifExplorer";
 import EnergyAnalysis from "./pages/EnergyAnalysis";
 import SimilaritySearch from "./pages/SimilaritySearch";
+import StaticGallery from "./pages/StaticGallery";
 import * as $3Dmol from "3dmol";
 
 const API_BASE = "http://127.0.0.1:8000";
@@ -153,6 +155,7 @@ function AppShell({ page, setPage, children }) {
     ["motif", "Motif Explorer"],
     ["similarity", "Similarity Search"],
     ["analysis", "Energy Analysis"],
+    ["gallery", "Visual Gallery"],
   ];
 
   return (
@@ -560,6 +563,7 @@ export default function App() {
         {page === "motif" && <MotifExplorer />}
         {page === "similarity" && <SimilaritySearch />}
         {page === "analysis" && <EnergyAnalysis />}
+        {page === "gallery" && <StaticGallery />}
       </div>
     </AppShell>
   );

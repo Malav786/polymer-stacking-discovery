@@ -1,8 +1,119 @@
-.venv/
+# ===========================
+# Python
+# ===========================
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ===========================
+# Virtual Environments
+# ===========================
+.venv/
+venv/
+ENV/
+
+# ===========================
+# Data & Large Files
+# ===========================
+data/
+outputs/
+results/
+scratch/
+*.pkl
+*.pt
+*.pth
+*.h5
+*.zip
+*.db
+
+# ===========================
+# Reports & Presentations
+# ===========================
+*.docx
+*.pdf
+*.pptx
+*.tmp
+~$*
+
+# ===========================
+# One-off Scripts (root level)
+# ===========================
+add_appendix.py
+extract_ipynb.py
+generate_capstone_ppt.js
+main.py
+qewty*
+final_report*
+CAPSTONE_DEFENSE_MASTER_GUIDE.md
+CAPSTONE_PRESENTATION_SCRIPT.md
+skills-lock.json
+.gitattributes
+
+# Root-level npm (PPT generation only)
+/package.json
+/package-lock.json
+/node_modules/
+
+# ===========================
+# Jupyter Notebooks
+# ===========================
 .ipynb_checkpoints/
-results/logs/
-results/predictions/
+
+# ===========================
+# Node / Frontend
+# ===========================
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.DS_Store
+frontend/replace_charts.py
+frontend/replace_dashboard_chart.py
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===========================
+# Backend generated
+# ===========================
+backend/.venv/
+backend/uv.lock
+backend/test_db.py
+backend/src/__pycache__/
+backend/src/**/__pycache__/
+
+# ===========================
+# Environment
+# ===========================
+.env
+.env.local
+backend/.env
+
+# ===========================
+# IDEs, Agents & OS
+# ===========================
+.vscode/
+.idea/
 .DS_Store
 Thumbs.db
+.agents/
+.adal/
+.augment/
+.claude/
+.gemini/
